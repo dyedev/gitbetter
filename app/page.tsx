@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,8 +17,28 @@ import {
   Plus,
   Server,
 } from "lucide-react";
+import { useQuery, gql } from "@apollo/client";
+
+const GET_RECENT_REPOSITORIES = gql`
+  query GetRepositories {
+    viewer {
+      repositories(first: 5, orderBy: { field: PUSHED_AT, direction: DESC }) {
+        nodes {
+          name
+          description
+          stargazerCount
+          owner {
+            login
+          }
+        }
+      }
+    }
+  }
+`;
 
 export default function Dashboard() {
+  const { data } = useQuery(GET_RECENT_REPOSITORIES);
+
   return (
     <>
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
@@ -214,57 +236,21 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
-                {/* Repo 1 */}
-                <div className="flex items-start gap-3">
-                  <span className="text-purple-500">
-                    <Layout className="h-5 w-5" />
-                  </span>
-                  <div className="flex-1">
-                    <h3 className="font-medium">frontend-app</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Updated 2h ago
-                    </p>
+                {data?.viewer?.repositories?.nodes.map((repo: any) => (
+                  <div className="flex items-start gap-3">
+                    <span className="text-purple-500">
+                      <Layout className="h-5 w-5" />
+                    </span>
+                    <div className="flex-1">
+                      <h3 className="font-medium">
+                        {repo.owner.login}/{repo.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Updated {repo.updatedAt}
+                      </p>
+                    </div>
                   </div>
-                </div>
-
-                {/* Repo 2 */}
-                <div className="flex items-start gap-3">
-                  <span className="text-green-500">
-                    <Server className="h-5 w-5" />
-                  </span>
-                  <div className="flex-1">
-                    <h3 className="font-medium">auth-service</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Updated 1d ago
-                    </p>
-                  </div>
-                </div>
-
-                {/* Repo 3 */}
-                <div className="flex items-start gap-3">
-                  <span className="text-blue-500">
-                    <Layers className="h-5 w-5" />
-                  </span>
-                  <div className="flex-1">
-                    <h3 className="font-medium">shared-libs</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Updated 3d ago
-                    </p>
-                  </div>
-                </div>
-
-                {/* Repo 4 */}
-                <div className="flex items-start gap-3">
-                  <span className="text-amber-500">
-                    <Database className="h-5 w-5" />
-                  </span>
-                  <div className="flex-1">
-                    <h3 className="font-medium">backend-api</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Updated 5d ago
-                    </p>
-                  </div>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>
