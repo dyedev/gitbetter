@@ -7,17 +7,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Separator } from "@radix-ui/react-separator";
 import {
   AlertCircle,
-  Book,
   Check,
-  Database,
   FileCode,
-  Layers,
   Layout,
   Palette,
   Plus,
   Server,
 } from "lucide-react";
 import { useQuery, gql } from "@apollo/client";
+import { useEffect, useState } from "react";
+import { GitHubLoginButton } from "@/components/github/login-button";
+import { GitHubLogoutButton } from "@/components/github/logout-button";
 
 const GET_RECENT_REPOSITORIES = gql`
   query GetRepositories {
@@ -37,11 +37,33 @@ const GET_RECENT_REPOSITORIES = gql`
 `;
 
 export default function Dashboard() {
-  const { data } = useQuery(GET_RECENT_REPOSITORIES);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { data } = useQuery(GET_RECENT_REPOSITORIES, {
+    skip: !isAuthenticated,
+  });
+  
+  useEffect(() => {
+    // Check if GitHub token exists in localStorage
+    const token = localStorage.getItem("github_token");
+    setIsAuthenticated(!!token);
+  }, []);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80vh]">
+        <h1 className="text-2xl font-bold mb-6">GitHub Dashboard</h1>
+        <p className="text-muted-foreground mb-8">Sign in with GitHub to view your repositories and activity</p>
+        <GitHubLoginButton />
+      </div>
+    );
+  }
 
   return (
     <>
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <GitHubLogoutButton />
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Column (2/3 width on desktop) */}
@@ -237,7 +259,7 @@ export default function Dashboard() {
             <CardContent className="space-y-4">
               <div className="space-y-4">
                 {data?.viewer?.repositories?.nodes.map((repo: any) => (
-                  <div className="flex items-start gap-3">
+                  <div className="flex items-start gap-3" key={repo.name}>
                     <span className="text-purple-500">
                       <Layout className="h-5 w-5" />
                     </span>
