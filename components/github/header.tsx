@@ -40,7 +40,7 @@ export default function Header() {
           <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
           </Button>
-          <Avatar className="h-8 w-8">
+          <Avatar className="h-8 w-8 rounded-full">
             <AvatarImage src={data?.viewer?.avatarUrl} alt="@user" />
             <AvatarFallback>U</AvatarFallback>
           </Avatar>

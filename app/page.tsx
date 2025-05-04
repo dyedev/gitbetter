@@ -7,7 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Separator } from "@radix-ui/react-separator";
 import {
   AlertCircle,
-  Check,
+  CheckCircle,
+  EllipsisIcon,
   FileCode,
   Layout,
   Palette,
@@ -22,6 +23,7 @@ import { GitHubLogoutButton } from "@/components/github/logout-button";
 const GET_RECENT_REPOSITORIES = gql`
   query GetRepositories {
     viewer {
+      login
       repositories(first: 5, orderBy: { field: PUSHED_AT, direction: DESC }) {
         nodes {
           name
@@ -36,12 +38,110 @@ const GET_RECENT_REPOSITORIES = gql`
   }
 `;
 
+const GET_RECENT_PULL_REQUESTS = gql`
+  query GetPullRequests($prAuthoredQuery: String!, $prAssignedQuery: String!) {
+    authored: search(first: 3, query: $prAuthoredQuery, type: ISSUE) {
+      issueCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        ... on PullRequest {
+          title
+          url
+          number
+          updatedAt
+          repository {
+            nameWithOwner
+          }
+          comments {
+            totalCount
+          }
+          commits(last: 1) {
+            totalCount
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    assigned: search(first: 3, query: $prAssignedQuery, type: ISSUE) {
+      issueCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        ... on PullRequest {
+          title
+          url
+          number
+          updatedAt
+          repository {
+            nameWithOwner
+          }
+          comments {
+            totalCount
+          }
+          commits(last: 1) {
+            totalCount
+            nodes {
+              commit {
+                statusCheckRollup {
+                  state
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const GET_USER_INFO = gql`
+  query GetUserInfo {
+    viewer {
+      login
+      avatarUrl
+    }
+  }
+`;
+
 export default function Dashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { data } = useQuery(GET_RECENT_REPOSITORIES, {
+  const { data: recentRepositoriesData } = useQuery(GET_RECENT_REPOSITORIES, {
     skip: !isAuthenticated,
   });
-  
+
+  const { data: userInfoData } = useQuery(GET_USER_INFO, {
+    skip: !isAuthenticated,
+  });
+
+  const prAuthoredQuery = `is:pr is:open author:${userInfoData?.viewer?.login} sort:updated`;
+  const prAssignedQuery = `is:pr is:open assigned:${userInfoData?.viewer?.login} sort:updated`;
+
+  const { data: pullRequestData, error: pullRequestErorrs } = useQuery(
+    GET_RECENT_PULL_REQUESTS,
+    {
+      skip: !isAuthenticated,
+      variables: {
+        prAssignedQuery,
+        prAuthoredQuery,
+      },
+    }
+  );
+
+  if (pullRequestErorrs) {
+    console.error("Error fetching pull requests:", pullRequestErorrs);
+  }
+
   useEffect(() => {
     // Check if GitHub token exists in localStorage
     const token = localStorage.getItem("github_token");
@@ -52,7 +152,9 @@ export default function Dashboard() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh]">
         <h1 className="text-2xl font-bold mb-6">GitHub Dashboard</h1>
-        <p className="text-muted-foreground mb-8">Sign in with GitHub to view your repositories and activity</p>
+        <p className="text-muted-foreground mb-8">
+          Sign in with GitHub to view your repositories and activity
+        </p>
         <GitHubLoginButton />
       </div>
     );
@@ -78,111 +180,57 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
-                {/* PR 1 */}
-                <div>
-                  <div className="flex items-start gap-2 mb-2">
-                    <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-600">
-                      <AlertCircle className="h-4 w-4" />
-                    </span>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium">
-                          Fix authentication middleware (#1423)
-                        </h3>
-                        <span className="text-sm text-muted-foreground">
-                          Updated 2h ago
+                {[
+                  ...(pullRequestData?.authored.nodes || []),
+                  ...(pullRequestData?.assigned.nodes || []),
+                ].map((pr: any) => (
+                  <div key={pr.url}>
+                    <div className="flex items-start gap-2 mb-2">
+                      {pr.commits.nodes[0]?.commit.statusCheckRollup?.state ===
+                      "SUCCESS" ? (
+                        <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-600">
+                          <CheckCircle className="h-4 w-4" />
                         </span>
+                      ) : pr.commits.nodes[0]?.commit.statusCheckRollup
+                          ?.state === "PENDING" ? (
+                        <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
+                          <span className="text-xs font-bold">
+                            <EllipsisIcon className="h-4 w-4 animate-spin" />
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-600">
+                          <AlertCircle className="h-4 w-4" />
+                        </span>
+                      )}
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-medium">
+                            {pr.title}
+                            {" (#"}
+                            {pr.number}
+                            {")"}
+                          </h3>
+                          <span className="text-sm text-muted-foreground">
+                            Updated{" "}
+                            {new Date(pr.updatedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {pr.repository.nameWithOwner}
+                          {" · "}
+                          {pr.comments?.totalCount} comments
+                          {" · "}
+                          {pr.commits?.totalCount} commits
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        repo/auth-service · 3 commits · 2 comments
-                      </p>
+                    </div>
+                    <div className="ml-8 bg-muted p-3 rounded-md text-sm font-mono text-red-500 whitespace-pre-wrap">
+                      Error: Failed to compile. src/middleware/auth.ts:42:5
+                      TypeError: Cannot read property 'token' of undefined
                     </div>
                   </div>
-                  <div className="ml-8 bg-muted p-3 rounded-md text-sm font-mono text-red-500 whitespace-pre-wrap">
-                    Error: Failed to compile. src/middleware/auth.ts:42:5
-                    TypeError: Cannot read property 'token' of undefined
-                  </div>
-                  <div className="ml-8 mt-2 flex items-center gap-2">
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage
-                        src="/placeholder.svg?height=20&width=20"
-                        alt="@user"
-                      />
-                      <AvatarFallback>U</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm text-muted-foreground">
-                      Assigned to you
-                    </span>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* PR 2 */}
-                <div>
-                  <div className="flex items-start gap-2 mb-2">
-                    <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-600">
-                      <Check className="h-4 w-4" />
-                    </span>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium">
-                          Add dark mode support (#982)
-                        </h3>
-                        <span className="text-sm text-muted-foreground">
-                          Updated 5h ago
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        repo/frontend-app · 8 commits · 5 comments
-                      </p>
-                    </div>
-                  </div>
-                  <div className="ml-8 mt-2 flex items-center gap-2">
-                    <Avatar className="h-5 w-5">
-                      <AvatarImage
-                        src="/placeholder.svg?height=20&width=20"
-                        alt="@user"
-                      />
-                      <AvatarFallback>U</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm text-muted-foreground">
-                      Created by Alex Smith
-                    </span>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* PR 3 */}
-                <div>
-                  <div className="flex items-start gap-2 mb-2">
-                    <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
-                      <AlertCircle className="h-4 w-4" />
-                    </span>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-medium">
-                          Update dependencies (#1024)
-                        </h3>
-                        <span className="text-sm text-muted-foreground">
-                          Updated 30m ago
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        repo/shared-libs · 1 commit · 0 comments
-                      </p>
-                    </div>
-                  </div>
-                  <div className="ml-8 mt-2 flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full border bg-background text-xs">
-                      CI
-                    </span>
-                    <span className="text-sm text-muted-foreground">
-                      CI in progress (3/5 checks)
-                    </span>
-                  </div>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -258,21 +306,23 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-4">
-                {data?.viewer?.repositories?.nodes.map((repo: any) => (
-                  <div className="flex items-start gap-3" key={repo.name}>
-                    <span className="text-purple-500">
-                      <Layout className="h-5 w-5" />
-                    </span>
-                    <div className="flex-1">
-                      <h3 className="font-medium">
-                        {repo.owner.login}/{repo.name}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Updated {repo.updatedAt}
-                      </p>
+                {recentRepositoriesData?.viewer?.repositories?.nodes.map(
+                  (repo: any) => (
+                    <div className="flex items-start gap-3" key={repo.name}>
+                      <span className="text-purple-500">
+                        <Layout className="h-5 w-5" />
+                      </span>
+                      <div className="flex-1">
+                        <h3 className="font-medium">
+                          {repo.owner.login}/{repo.name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Updated {repo.updatedAt}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             </CardContent>
           </Card>
