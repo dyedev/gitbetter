@@ -3,7 +3,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { Separator } from "@radix-ui/react-separator";
 import {
   AlertCircle,
@@ -15,10 +14,8 @@ import {
   Plus,
   Server,
 } from "lucide-react";
-import { useQuery, gql } from "@apollo/client";
-import { useEffect, useState } from "react";
-import { GitHubLoginButton } from "@/components/github/login-button";
-import { GitHubLogoutButton } from "@/components/github/logout-button";
+import { gql, useQuery } from "urql";
+import { useSession } from "next-auth/react";
 
 const GET_RECENT_REPOSITORIES = gql`
   query GetRepositories {
@@ -29,6 +26,7 @@ const GET_RECENT_REPOSITORIES = gql`
           name
           description
           stargazerCount
+          pushedAt
           owner {
             login
           }
@@ -115,47 +113,37 @@ const GET_USER_INFO = gql`
 `;
 
 export default function Dashboard() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const { data: recentRepositoriesData } = useQuery(GET_RECENT_REPOSITORIES, {
-    skip: !isAuthenticated,
+  const { data: session } = useSession();
+
+  const [{ data: recentRepositoriesData }] = useQuery({
+    query: GET_RECENT_REPOSITORIES,
+    pause: !session,
   });
 
-  const { data: userInfoData } = useQuery(GET_USER_INFO, {
-    skip: !isAuthenticated,
+  const [{ data: userInfoData }] = useQuery({
+    query: GET_USER_INFO,
+    pause: !session,
   });
 
   const prAuthoredQuery = `is:pr is:open author:${userInfoData?.viewer?.login} sort:updated`;
   const prAssignedQuery = `is:pr is:open assigned:${userInfoData?.viewer?.login} sort:updated`;
 
-  const { data: pullRequestData, error: pullRequestErorrs } = useQuery(
-    GET_RECENT_PULL_REQUESTS,
-    {
-      skip: !isAuthenticated,
-      variables: {
-        prAssignedQuery,
-        prAuthoredQuery,
-      },
-    }
-  );
+  const [{ data: pullRequestData }] = useQuery({
+    query: GET_RECENT_PULL_REQUESTS,
+    variables: {
+      prAssignedQuery,
+      prAuthoredQuery,
+    },
+    pause: !session,
+  });
 
-  if (pullRequestErorrs) {
-    console.error("Error fetching pull requests:", pullRequestErorrs);
-  }
-
-  useEffect(() => {
-    // Check if GitHub token exists in localStorage
-    const token = localStorage.getItem("github_token");
-    setIsAuthenticated(!!token);
-  }, []);
-
-  if (!isAuthenticated) {
+  if (!session) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[80vh]">
         <h1 className="text-2xl font-bold mb-6">GitHub Dashboard</h1>
         <p className="text-muted-foreground mb-8">
           Sign in with GitHub to view your repositories and activity
         </p>
-        <GitHubLoginButton />
       </div>
     );
   }
@@ -164,7 +152,6 @@ export default function Dashboard() {
     <>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <GitHubLogoutButton />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -317,7 +304,7 @@ export default function Dashboard() {
                           {repo.owner.login}/{repo.name}
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          Updated {repo.updatedAt}
+                          Updated {new Date(repo.pushedAt).toLocaleDateString()}
                         </p>
                       </div>
                     </div>

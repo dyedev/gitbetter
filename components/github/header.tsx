@@ -1,32 +1,37 @@
-"use client";
-
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { gql, useQuery } from "@apollo/client";
 import { Bell, Plus, Search } from "lucide-react";
+import Link from "next/link";
+import { getServerSession } from "next-auth/next";
+import { options } from "@/app/api/auth/[...nextauth]/options";
+import { SignOutButton } from "@/components/github/sign-out-button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "../ui/input";
+import { SignInButton } from "./sign-in-button";
 
-const GET_USER_INFO = gql`
-  query GetUserInfo {
-    viewer {
-      avatarUrl
-    }
-  }
-`;
-
-export default function Header() {
-  const { data } = useQuery(GET_USER_INFO);
+export const Header = async () => {
+  const session = await getServerSession(options);
 
   return (
     <header className="border-b sticky top-0 z-10 bg-background">
       <div className="flex h-14 items-center px-4">
         <div className="flex items-center gap-4">
-          <GitHubLogo className="h-8 w-8" />
+          <Link href="/">
+            <GitHubLogo className="h-8 w-8" />
+          </Link>
           <div className="relative w-full max-w-md">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <input
+            <Input
               type="search"
               placeholder="Type / to search"
-              className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-12 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="h-9 w-full rounded-md border border-input bg-background pl-8 pr-12 text-sm ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             />
             <kbd className="pointer-events-none absolute right-1.5 top-1.5 h-6 select-none rounded border bg-background px-1.5 font-mono text-[10px] font-medium opacity-100 text-muted-foreground">
               /
@@ -40,15 +45,37 @@ export default function Header() {
           <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
           </Button>
-          <Avatar className="h-8 w-8 rounded-full">
-            <AvatarImage src={data?.viewer?.avatarUrl} alt="@user" />
-            <AvatarFallback>U</AvatarFallback>
-          </Avatar>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Avatar className="h-8 w-8 rounded-full">
+                  <AvatarImage
+                    src={session?.user?.image || undefined}
+                    alt={session?.user?.name || "User Avatar"}
+                  />
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {!session?.user ? (
+                <DropdownMenuItem>
+                  <SignInButton />
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem>
+                  <SignOutButton />
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
   );
-}
+};
 
 function GitHubLogo(props: React.SVGProps<SVGSVGElement>) {
   return (
