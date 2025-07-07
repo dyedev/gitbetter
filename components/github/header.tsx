@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Bell, Plus, Search } from "lucide-react";
+import { Bell, Moon, Plus, Search, Sun } from "lucide-react";
 import Link from "next/link";
 import { getServerSession } from "next-auth/next";
 import { options } from "@/app/api/auth/[...nextauth]/options";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "../ui/input";
 import { SignInButton } from "./sign-in-button";
+import { ThemeSwitcher } from "./theme-switcher";
 
 export const Header = async () => {
   const session = await getServerSession(options);
@@ -45,6 +46,7 @@ export const Header = async () => {
           <Button variant="ghost" size="icon">
             <Bell className="h-5 w-5" />
           </Button>
+          <ThemeSwitcher />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">

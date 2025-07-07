@@ -175,18 +175,18 @@ export default function Dashboard() {
                     <div className="flex items-start gap-2 mb-2">
                       {pr.commits.nodes[0]?.commit.statusCheckRollup?.state ===
                       "SUCCESS" ? (
-                        <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-600">
+                        <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-muted text-green-500">
                           <CheckCircle className="h-4 w-4" />
                         </span>
                       ) : pr.commits.nodes[0]?.commit.statusCheckRollup
                           ?.state === "PENDING" ? (
-                        <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
+                        <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100 text-yellow-600 dark:bg-muted text-yellow-500">
                           <span className="text-xs font-bold">
                             <EllipsisIcon className="h-4 w-4 animate-spin" />
                           </span>
                         </span>
                       ) : (
-                        <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-600">
+                        <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-muted text-red-500">
                           <AlertCircle className="h-4 w-4" />
                         </span>
                       )}
@@ -234,7 +234,7 @@ export default function Dashboard() {
               <div className="space-y-4">
                 {/* Review 1 */}
                 <div className="flex items-start gap-2">
-                  <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                  <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-muted-foreground dark:text-muted">
                     <span className="text-xs font-bold">R</span>
                   </span>
                   <div className="flex-1">
@@ -256,7 +256,7 @@ export default function Dashboard() {
 
                 {/* Review 2 */}
                 <div className="flex items-start gap-2">
-                  <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600">
+                  <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600 dark:bg-muted-foreground dark:text-muted">
                     <span className="text-xs font-bold">R</span>
                   </span>
                   <div className="flex-1">
@@ -308,7 +308,7 @@ export default function Dashboard() {
                         </p>
                       </div>
                     </div>
-                  )
+                  ),
                 )}
               </div>
             </CardContent>
@@ -337,7 +337,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="bg-blue-50">
+                  <Badge variant="outline" className="bg-blue-50 dark:bg-muted">
                     8 members
                   </Badge>
                 </div>
@@ -355,7 +355,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="bg-blue-50">
+                  <Badge variant="outline" className="bg-blue-50 dark:bg-muted">
                     6 members
                   </Badge>
                 </div>
@@ -373,7 +373,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="bg-blue-50">
+                  <Badge variant="outline" className="bg-blue-50 dark:bg-muted">
                     4 members
                   </Badge>
                 </div>
@@ -391,7 +391,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                  <Badge variant="outline" className="bg-blue-50">
+                  <Badge variant="outline" className="bg-blue-50 dark:bg-muted">
                     5 members
                   </Badge>
                 </div>

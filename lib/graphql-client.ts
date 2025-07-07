@@ -32,7 +32,7 @@ export const useClient = () => {
             },
             didAuthError: ({ graphQLErrors }) => {
               return graphQLErrors.some(
-                (e) => e.extensions?.code === "FORBIDDEN"
+                (e) => e.extensions?.code === "FORBIDDEN",
               );
             },
             willAuthError: () => !session?.accessToken,
