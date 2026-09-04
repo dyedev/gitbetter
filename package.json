@@ -64,13 +64,13 @@
     "zod": "^3.25.74"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4.1.11",
-    "@types/node": "^24",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "24.13.3",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint-config-next": "^15.3.5",
-    "postcss": "^8",
-    "tailwindcss": "^4.1.11",
-    "typescript": "^5"
+    "eslint-config-next": "15.5.25",
+    "postcss": "8.5.28",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
   }
 }
